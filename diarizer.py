@@ -274,6 +274,8 @@ class Diarizer:
         indexes = [[0, cutoffs[0]]]
         for c in cutoffs[1:]:
             indexes.append([indexes[-1][-1], c])
+        
+        indexes[-1][-1] = len(words)
 
         final_segments = []
 
