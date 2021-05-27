@@ -1,4 +1,8 @@
 # simple_diarizer
+
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1nMKHOTTROwQitOXQEYq35lvv7nyTOlpe?usp=sharing)
+
 Simplified diarization pipeline to oracle number speakers using some pretrained models.
 
 Mostly just glue code.
