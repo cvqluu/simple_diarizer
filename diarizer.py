@@ -15,11 +15,17 @@ from .utils import check_wav_16khz_mono, convert_wavfile
 
 class Diarizer:
 
-    def __init__(self, embed_model,
+    def __init__(self, embed_model='xvec',
                  window=1.5, period=0.75):
-
+                 
+        assert embed_model in ['xvec', 'ecapa'], "Only xvec and ecapa are supported options"
         self.vad_model, self.get_speech_ts = self.setup_VAD()
-        self.embed_model = embed_model
+
+        if embed_model == 'xvec':
+            self.embed_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", 
+                                savedir="pretrained_models/spkrec-xvect-voxceleb")
+        if embed_model == 'ecapa':
+            self.embed_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
 
         self.window = window
         self.period = period
