@@ -1,6 +1,8 @@
 import datetime
 import subprocess
 
+import matplotlib.pyplot as plt
+import numpy as np
 import torchaudio
 from bs4 import BeautifulSoup
 
@@ -57,3 +59,51 @@ def parse_ttml(file):
         seg = parse_entry(e)
         segments.append(seg)
     return segments
+
+##################
+# Plotting utils
+##################
+
+def waveplot(signal, fs, start_idx=0, figsize=(5,3), color='tab:blue'):
+    plt.figure(figsize=figsize)
+    start_time = start_idx / fs
+    end_time = start_time + (len(signal) / fs)
+
+    plt.plot(np.linspace(start_time, end_time, len(signal)), signal, color=color)
+    plt.xlabel('Time (s)')
+    plt.xlim([start_time, end_time])
+
+    max_amp = np.max(np.abs([np.max(signal),np.min(signal)]))
+    plt.ylim([-max_amp, max_amp])
+
+    plt.tight_layout()
+    return plt.gca()
+
+def combined_waveplot(signal, fs, segments, figsize=(20,3)):
+    colors = np.array(['tab:blue', 'tab:orange', 'tab:green', 'tab:yellow', 'tab:red', 'tab:purple', 'tab:brown'])
+    plt.figure(figsize=figsize)
+    for seg in segments:
+        start = seg['start_sample']
+        end = seg['end_sample']
+        speech = signal[start:end]
+        color = colors[seg['label']]
+
+        linelabel = 'Speaker {}'.format(seg['label'])
+        plt.plot(np.linspace(seg['start'], seg['end'], len(speech)), speech, color=color, label=linelabel)
+
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    plt.legend(by_label.values(), by_label.keys(), loc='lower right')
+
+    plt.xlabel('Time (s)')
+    plt.xlim([0,len(signal)/fs])
+
+    xticks = np.arange(0, (len(signal)//fs)+1, 30)
+    xtick_labels = [str(datetime.timedelta(seconds=int(x))) for x in xticks]
+    plt.xticks(ticks=xticks, labels=xtick_labels)
+
+    max_amp = np.max(np.abs([np.max(signal),np.min(signal)]))
+    plt.ylim([-max_amp, max_amp])
+
+    plt.tight_layout()
+    return plt.gca()
