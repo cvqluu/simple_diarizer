@@ -24,6 +24,13 @@ plt.show()
   <img src="media/diarized_waveplot.png?raw=true">
 </p>
 
+### Source Video
+
+"[Some Quick Advice from Barack Obama!](https://youtu.be/I49VNQ6lmKk)"
+
+[![YouTube Thumbnail](https://img.youtube.com/vi/I49VNQ6lmKk/0.jpg)](https://www.youtube.com/watch?v=I49VNQ6lmKk)
+
+
 # Pre-trained Models
 
 The following pretrained models are used:
