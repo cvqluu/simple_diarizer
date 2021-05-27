@@ -79,7 +79,7 @@ def waveplot(signal, fs, start_idx=0, figsize=(5,3), color='tab:blue'):
     plt.tight_layout()
     return plt.gca()
 
-def combined_waveplot(signal, fs, segments, figsize=(20,3)):
+def combined_waveplot(signal, fs, segments, figsize=(10,3), tick_interval=60):
     colors = np.array(['tab:blue', 'tab:orange', 'tab:green', 'tab:yellow', 'tab:red', 'tab:purple', 'tab:brown'])
     plt.figure(figsize=figsize)
     for seg in segments:
@@ -98,7 +98,7 @@ def combined_waveplot(signal, fs, segments, figsize=(20,3)):
     plt.xlabel('Time')
     plt.xlim([0,len(signal)/fs])
 
-    xticks = np.arange(0, (len(signal)//fs)+1, 30)
+    xticks = np.arange(0, (len(signal)//fs)+1, tick_interval)
     xtick_labels = [str(datetime.timedelta(seconds=int(x))) for x in xticks]
     plt.xticks(ticks=xticks, labels=xtick_labels)
 
