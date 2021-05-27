@@ -16,7 +16,7 @@ def check_wav_16khz_mono(wavfile):
     Checks if a wav file is 16khz and single channel
     """
     signal, fs = torchaudio.load(wavfile)
-    
+
     mono = signal.shape[0] == 1
     freq = fs == 16000
     if mono and freq:
@@ -24,18 +24,21 @@ def check_wav_16khz_mono(wavfile):
     else:
         return False
 
+
 def convert_wavfile(wavfile, outfile):
     """
     Converts file to 16khz single channel mono wav
     """
-    cmd = "ffmpeg -y -i {} -acodec pcm_s16le -ar 16000 -ac 1 {}".format(wavfile, outfile)
+    cmd = "ffmpeg -y -i {} -acodec pcm_s16le -ar 16000 -ac 1 {}".format(
+        wavfile, outfile)
     subprocess.Popen(cmd, shell=True).wait()
+
 
 class Diarizer:
 
     def __init__(self, embed_model,
-                window=1.5, period=0.75):
-        
+                 window=1.5, period=0.75):
+
         self.vad_model, self.get_speech_ts = self.setup_VAD()
         self.embed_model = embed_model
 
@@ -44,8 +47,8 @@ class Diarizer:
 
     def setup_VAD(self):
         model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
-                                    model='silero_vad')
-                                    # force_reload=True)
+                                      model='silero_vad')
+        # force_reload=True)
 
         (get_speech_ts,
             _, _, read_audio,
@@ -77,7 +80,7 @@ class Diarizer:
         while start + len_window < len_signal:
             segments.append([start, start+len_window])
             start += len_period
-        
+
         segments.append([start, len_signal-1])
         embeds = []
 
@@ -103,14 +106,14 @@ class Diarizer:
             start = utt['start']
             end = utt['end']
 
-            utt_signal = signal[:,start:end]
-            utt_embeds, utt_segments = self.windowed_embeds(utt_signal, 
+            utt_signal = signal[:, start:end]
+            utt_embeds, utt_segments = self.windowed_embeds(utt_signal,
                                                             fs,
                                                             self.window,
                                                             self.period)
             all_embeds.append(utt_embeds)
             all_segments.append(utt_segments + start)
-        
+
         all_embeds = np.concatenate(all_embeds, axis=0)
         all_segments = np.concatenate(all_segments, axis=0)
         return all_embeds, all_segments
@@ -127,16 +130,17 @@ class Diarizer:
         return cluster_labels
 
     @staticmethod
-    def join_segments(cluster_labels, segments):
+    def join_segments(cluster_labels, segments, tolerance=5):
         """
         Joins up same speaker segments, resolves overlap conflicts
 
         Uses the midpoint for overlap conflicts
+        tolerance allows for very minimally separated segments to be combined
         """
         assert len(cluster_labels) == len(segments)
 
-        new_segments = [{'start': segments[0][0], 
-                         'end': segments[0][1], 
+        new_segments = [{'start': segments[0][0],
+                         'end': segments[0][1],
                          'label': cluster_labels[0]}]
 
         for l, seg in zip(cluster_labels[1:], segments[1:]):
@@ -147,7 +151,7 @@ class Diarizer:
                         'end': seg[1],
                         'label': l}
 
-            if start <= new_segments[-1]['end']:
+            if start - tolerance <= new_segments[-1]['end']:
                 # If segments overlap
                 if l == new_segments[-1]['label']:
                     # If overlapping segment has same label
@@ -173,12 +177,14 @@ class Diarizer:
         Convert cleaned segments to readable format in seconds
         """
         for seg in cleaned_segments:
+            seg['start_sample'] = seg['start']
+            seg['end_sample'] = seg['end']
             seg['start'] = seg['start']/fs
             seg['end'] = seg['end']/fs
         return cleaned_segments
 
-    def diarize(self, 
-                wav_file, 
+    def diarize(self,
+                wav_file,
                 num_speakers=2,
                 extra_info=False,
                 outfile=None):
@@ -189,7 +195,7 @@ class Diarizer:
         """
         signal, fs = torchaudio.load(wav_file)
         recname = os.path.splitext(os.path.basename(wav_file))[0]
-        
+
         assert signal.shape[0] == 1, "Audio needs to be single channel"
         assert fs == 16000, "Only 16khz audio supported"
 
@@ -207,7 +213,7 @@ class Diarizer:
         print('Cleaning up output...')
         cleaned_segments = self.join_segments(cluster_labels, segments)
         cleaned_segments = self.make_output_seconds(cleaned_segments, fs)
-        
+
         if outfile:
             self.rttm_output(cleaned_segments, recname, outfile=outfile)
 
@@ -227,7 +233,7 @@ class Diarizer:
                 label = seg['label']
                 line = rttm_line.format(recname, start, offset, label)
                 fp.write(line)
-            
+
     @staticmethod
     def join_samespeaker_segments(segments, silence_tolerance=5.0):
         """
@@ -252,8 +258,8 @@ class Diarizer:
         """
         Match the output of .diarize to a ctm file produced by asr
         """
-        ctm_df = pd.read_csv(ctm_file, delimiter=' ', 
-                                names=['utt', 'channel', 'start', 'offset', 'word', 'confidence'])
+        ctm_df = pd.read_csv(ctm_file, delimiter=' ',
+                             names=['utt', 'channel', 'start', 'offset', 'word', 'confidence'])
         ctm_df['end'] = ctm_df['start'] + ctm_df['offset']
 
         starts = ctm_df['start'].values
@@ -261,20 +267,22 @@ class Diarizer:
         words = ctm_df['word'].values
 
         # Get the earliest start from either diar output or asr output
-        earliest_start = np.min([ctm_df['start'].values[0], segments[0]['start']])
+        earliest_start = np.min(
+            [ctm_df['start'].values[0], segments[0]['start']])
 
         worded_segments = self.join_samespeaker_segments(segments)
         worded_segments[0]['start'] = earliest_start
         cutoffs = []
 
         for seg in worded_segments:
-            end_idx = np.searchsorted(ctm_df['end'].values, seg['end'], side='left') - 1
+            end_idx = np.searchsorted(
+                ctm_df['end'].values, seg['end'], side='left') - 1
             cutoffs.append(end_idx)
-        
+
         indexes = [[0, cutoffs[0]]]
         for c in cutoffs[1:]:
             indexes.append([indexes[-1][-1], c])
-        
+
         indexes[-1][-1] = len(words)
 
         final_segments = []
@@ -287,8 +295,8 @@ class Diarizer:
                 final_segments.append(seg)
             else:
                 print('Removed segment between {} and {} as no words were matched'.format(
-                                                seg['start'], seg['end']))
-        
+                    seg['start'], seg['end']))
+
         return final_segments
 
     @staticmethod
@@ -296,7 +304,8 @@ class Diarizer:
         with open(outfile, 'w') as fp:
             for seg in worded_segments:
                 fp.write('[{} to {}] Speaker {}: \n'.format(round(seg['start'], 2),
-                                                            round(seg['end'], 2),
+                                                            round(
+                                                                seg['end'], 2),
                                                             seg['label']))
                 fp.write('{}\n\n'.format(seg['words']))
 
@@ -313,8 +322,9 @@ if __name__ == "__main__":
 
     if check_wav_16khz_mono(wavfile):
         correct_wav = wavfile
-    else: 
-        correct_wav = os.path.join(outfolder, '{}_converted.wav'.format(recname))
+    else:
+        correct_wav = os.path.join(
+            outfolder, '{}_converted.wav'.format(recname))
         convert_wavfile(wavfile, correct_wav)
 
     # model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
@@ -322,5 +332,5 @@ if __name__ == "__main__":
         source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
 
     diar = Diarizer(model)
-    segments = diar.diarize(correct_wav, num_speakers=num_speakers, outfile=os.path.join(outfolder, 'hyp.rttm'))
-
+    segments = diar.diarize(correct_wav, num_speakers=num_speakers,
+                            outfile=os.path.join(outfolder, 'hyp.rttm'))
