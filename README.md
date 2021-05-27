@@ -12,7 +12,11 @@ import matplotlib.pyplot as plt
 from simple_diarizer.diarizer import Diarizer
 from simple_diarizer.utils import combined_waveplot
 
-diar = Diarizer(embed_model='xvec')
+diar = Diarizer(
+                  embed_model='xvec', # 'xvec' and 'ecapa' supported
+                  cluster_method='ahc' # 'ahc' and 'sc' supported
+               )
+
 segments = diar.diarize(WAV_FILE, num_speakers=NUM_SPEAKERS)
 
 signal, fs = sf.read(WAV_FILE)
@@ -53,5 +57,5 @@ Hopefully this can be of use as a free basic tool to help people transcribing in
 
 
 # TODOs
- - Add in other clustering methods (like spectral clustering)
  - Generally add more customizable parameters
+ - Quick evaluation tools (maybe use pyannote) for metrics
