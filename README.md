@@ -5,7 +5,17 @@
 
 Simplified diarization pipeline to oracle number speakers using some pretrained models.
 
-Mostly just glue code.
+```python
+from simple_diarizer.diarizer import Diarizer
+
+diar = Diarizer(embed_model='xvec', window=1.5, period=0.75)
+segments = diar.diarize(WAV_FILE, num_speakers=NUM_SPEAKERS)
+
+combined_waveplot(signal, fs, segments)
+plt.show()
+```
+
+# Pre-trained Models
 
 The following pretrained models are used:
 

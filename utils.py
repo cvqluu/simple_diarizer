@@ -95,7 +95,7 @@ def combined_waveplot(signal, fs, segments, figsize=(20,3)):
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys(), loc='lower right')
 
-    plt.xlabel('Time (s)')
+    plt.xlabel('Time')
     plt.xlim([0,len(signal)/fs])
 
     xticks = np.arange(0, (len(signal)//fs)+1, 30)
