@@ -136,6 +136,7 @@ class Diarizer:
 
         Uses the midpoint for overlap conflicts
         tolerance allows for very minimally separated segments to be combined
+        (in samples)
         """
         assert len(cluster_labels) == len(segments)
 
@@ -151,7 +152,7 @@ class Diarizer:
                         'end': seg[1],
                         'label': l}
 
-            if start - tolerance <= new_segments[-1]['end']:
+            if start <= new_segments[-1]['end']:
                 # If segments overlap
                 if l == new_segments[-1]['label']:
                     # If overlapping segment has same label
@@ -213,6 +214,8 @@ class Diarizer:
         print('Cleaning up output...')
         cleaned_segments = self.join_segments(cluster_labels, segments)
         cleaned_segments = self.make_output_seconds(cleaned_segments, fs)
+        cleaned_segments = self.join_samespeaker_segments(cleaned_segments,
+                                                          silence_tolerance=0.5)
 
         if outfile:
             self.rttm_output(cleaned_segments, recname, outfile=outfile)
@@ -248,13 +251,60 @@ class Diarizer:
             if seg['label'] == new_segments[-1]['label']:
                 if new_segments[-1]['end'] + silence_tolerance >= seg['start']:
                     new_segments[-1]['end'] = seg['end']
+                    new_segments[-1]['end_sample'] = seg['end_sample']
                 else:
                     new_segments.append(seg)
             else:
                 new_segments.append(seg)
         return new_segments
 
-    def match_diarization_to_transcript(self, segments, ctm_file):
+    def match_diarization_to_transcript(self, segments, word_segments):
+        """
+        Match the output of .diarize to word segments
+        """
+
+        word_starts, word_ends, word_segs = [], [], []
+        for s in word_segments:
+            word_starts.append(s['start'])
+            word_ends.append(s['end'])
+            word_segs.append(s['text'])
+
+        word_starts = np.array(word_starts)
+        word_ends = np.array(word_ends)
+        word_segs = np.array(word_segs)
+
+        # Get the earliest start from either diar output or asr output
+        earliest_start = np.min([word_starts[0], segments[0]['start']])
+
+        worded_segments = self.join_samespeaker_segments(segments)
+        worded_segments[0]['start'] = earliest_start
+        cutoffs = []
+
+        for seg in worded_segments:
+            end_idx = np.searchsorted(word_ends, seg['end'], side='left') - 1
+            cutoffs.append(end_idx)
+
+        indexes = [[0, cutoffs[0]]]
+        for c in cutoffs[1:]:
+            indexes.append([indexes[-1][-1], c])
+
+        indexes[-1][-1] = len(word_segs)
+
+        final_segments = []
+
+        for i, seg in enumerate(worded_segments):
+            s_idx, e_idx = indexes[i]
+            words = word_segs[s_idx:e_idx]
+            seg['words'] = ' '.join(words)
+            if len(words) >= 1:
+                final_segments.append(seg)
+            else:
+                print('Removed segment between {} and {} as no words were matched'.format(
+                    seg['start'], seg['end']))
+
+        return final_segments
+
+    def match_diarization_to_transcript_ctm(self, segments, ctm_file):
         """
         Match the output of .diarize to a ctm file produced by asr
         """
