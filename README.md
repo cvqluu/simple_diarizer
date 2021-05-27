@@ -43,3 +43,10 @@ It can be checked out here, where it will try and diarize any input YouTube URL.
 # **[Google Colab](https://colab.research.google.com/drive/1nMKHOTTROwQitOXQEYq35lvv7nyTOlpe?usp=sharing)**
 
 Hopefully this can be of use as a free basic tool to help people transcribing interviews.
+
+
+# TODOs:
+
+ - Make embedding extraction happen on GPU if available
+ - Add in other clustering methods (like spectral clustering)
+ - Generally add more customizable parameters
