@@ -2,8 +2,11 @@
 
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1nMKHOTTROwQitOXQEYq35lvv7nyTOlpe?usp=sharing)
+[![](https://shields.io/badge/Trello-simple__diarizer-blue?logo=Trello&style=flat)](https://trello.com/b/2ZN9ybC1/simplediarizer)
 
-Simplified diarization pipeline to oracle number speakers using some pretrained models.
+Simplified diarization pipeline using some pretrained models. 
+
+Made to be a simple as possible to go from an input audio file to diarized segments.
 
 ```python
 import soundfile as sf
@@ -49,7 +52,7 @@ The following pretrained models are used:
      - [ESPnet Model Zoo](https://github.com/espnet/espnet_model_zoo)
         - English ASR model
 
-# **[Google Colab](https://colab.research.google.com/drive/1nMKHOTTROwQitOXQEYq35lvv7nyTOlpe?usp=sharing)**
+# **[Demo](https://colab.research.google.com/drive/1nMKHOTTROwQitOXQEYq35lvv7nyTOlpe?usp=sharing)**
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1nMKHOTTROwQitOXQEYq35lvv7nyTOlpe?usp=sharing)
 
@@ -63,6 +66,6 @@ Hopefully this can be of use as a free basic tool to help people transcribing in
 - Spectral clustering methods lifted from [https://github.com/wq2012/SpectralCluster](https://github.com/wq2012/SpectralCluster)
 
 
-# TODOs
- - Generally add more customizable parameters
- - Quick evaluation tools (maybe use pyannote) for metrics
+# Planned Features
+
+[![](https://shields.io/badge/simple__diarizer-Trello-blue?logo=Trello&style=flat)](https://trello.com/b/2ZN9ybC1/simplediarizer)
