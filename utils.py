@@ -80,7 +80,10 @@ def waveplot(signal, fs, start_idx=0, figsize=(5,3), color='tab:blue'):
     return plt.gca()
 
 def combined_waveplot(signal, fs, segments, figsize=(10,3), tick_interval=60):
-    colors = np.array(['tab:blue', 'tab:orange', 'tab:green', 'tab:yellow', 'tab:red', 'tab:purple', 'tab:brown'])
+    colors = np.array(['tab:blue', 'tab:orange', 'tab:green', 
+                        'tab:red', 'tab:purple', 'tab:brown', 
+                        'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'])
+
     plt.figure(figsize=figsize)
     for seg in segments:
         start = seg['start_sample']
