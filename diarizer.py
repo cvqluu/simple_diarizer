@@ -17,7 +17,7 @@ class Diarizer:
 
     def __init__(self, 
                  embed_model='xvec',
-                 cluster_method='ahc',
+                 cluster_method='sc',
                  window=1.5, 
                  period=0.75):
                  

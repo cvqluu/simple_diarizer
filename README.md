@@ -17,7 +17,7 @@ from simple_diarizer.utils import combined_waveplot
 
 diar = Diarizer(
                   embed_model='xvec', # 'xvec' and 'ecapa' supported
-                  cluster_method='ahc' # 'ahc' and 'sc' supported
+                  cluster_method='sc' # 'ahc' and 'sc' supported
                )
 
 segments = diar.diarize(WAV_FILE, num_speakers=NUM_SPEAKERS)
