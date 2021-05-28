@@ -178,11 +178,37 @@ class Diarizer:
                 wav_file,
                 num_speakers=2,
                 threshold=None,
+                silence_tolerance=0.2,
                 enhance_sim=True,
                 extra_info=False,
                 outfile=None):
         """
-        Diarize a 16khz mono wav file according to set num_speakers,
+        Diarize a 16khz mono wav file, produces list of segments
+
+            Inputs:
+                wav_file (path): Path to input audio file
+                num_speakers (int) or NoneType: Number of speakers to cluster to
+                threshold (float) or NoneType: Threshold to cluster to if 
+                                                num_speakers is not defined
+                silence_tolerance (float): Same speaker segments which are close enough together
+                                            by silence_tolerance will be joined into a single segment
+                enhance_sim (bool): Whether or not to perform affinity matrix enhancement
+                                    during spectral clustering
+                                    If self.cluster_method is 'ahc' this option does nothing.
+                extra_info (bool): Whether or not to return the embeddings and raw segments 
+                                    in addition to segments
+                outfile (path): If specified will output an RTTM file
+
+            Outputs:
+                If extra_info is False:
+                    segments (list): List of dicts with segment information
+                              {
+                                'start': Start time of segment in seconds,
+                                'start_sample': Starting index of segment,
+                                'end': End time of segment in seconds,
+                                'end_sample' Ending index of segment,
+                                'label': Cluster label of segment
+                              }
 
         Uses AHC/SC to cluster
         """
@@ -208,7 +234,7 @@ class Diarizer:
         cleaned_segments = self.join_segments(cluster_labels, segments)
         cleaned_segments = self.make_output_seconds(cleaned_segments, fs)
         cleaned_segments = self.join_samespeaker_segments(cleaned_segments,
-                                                          silence_tolerance=0.5)
+                                                          silence_tolerance=silence_tolerance)
         print('Done!')
         if outfile:
             self.rttm_output(cleaned_segments, recname, outfile=outfile)
@@ -216,7 +242,7 @@ class Diarizer:
         if not extra_info:
             return cleaned_segments
         else:
-            return cleaned_segments, embeds, cleaned_segments
+            return cleaned_segments, embeds, segments
 
     @staticmethod
     def rttm_output(segments, recname, outfile=None):
