@@ -13,16 +13,19 @@ from tqdm.autonotebook import tqdm
 from .utils import check_wav_16khz_mono, convert_wavfile
 from .cluster import cluster_AHC, cluster_SC
 
+
 class Diarizer:
 
-    def __init__(self, 
+    def __init__(self,
                  embed_model='xvec',
                  cluster_method='sc',
-                 window=1.5, 
+                 window=1.5,
                  period=0.75):
-                 
-        assert embed_model in ['xvec', 'ecapa'], "Only xvec and ecapa are supported options"
-        assert cluster_method in ['ahc', 'sc'], "Only ahc and sc in the supported clustering options"
+
+        assert embed_model in [
+            'xvec', 'ecapa'], "Only xvec and ecapa are supported options"
+        assert cluster_method in [
+            'ahc', 'sc'], "Only ahc and sc in the supported clustering options"
 
         if cluster_method == 'ahc':
             self.cluster = cluster_AHC
@@ -31,15 +34,16 @@ class Diarizer:
 
         self.vad_model, self.get_speech_ts = self.setup_VAD()
 
-        self.run_opts = {"device": "cuda:0"} if torch.cuda.is_available() else {"device": "cpu"}
+        self.run_opts = {"device": "cuda:0"} if torch.cuda.is_available() else {
+            "device": "cpu"}
 
         if embed_model == 'xvec':
             self.embed_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb",
-                                                              savedir="pretrained_models/spkrec-xvect-voxceleb", 
+                                                              savedir="pretrained_models/spkrec-xvect-voxceleb",
                                                               run_opts=self.run_opts)
         if embed_model == 'ecapa':
             self.embed_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                              savedir="pretrained_models/spkrec-ecapa-voxceleb", 
+                                                              savedir="pretrained_models/spkrec-ecapa-voxceleb",
                                                               run_opts=self.run_opts)
 
         self.window = window
@@ -117,7 +121,6 @@ class Diarizer:
         all_embeds = np.concatenate(all_embeds, axis=0)
         all_segments = np.concatenate(all_segments, axis=0)
         return all_embeds, all_segments
-
 
     @staticmethod
     def join_segments(cluster_labels, segments, tolerance=5):
@@ -212,11 +215,18 @@ class Diarizer:
 
         Uses AHC/SC to cluster
         """
-        signal, fs = torchaudio.load(wav_file)
         recname = os.path.splitext(os.path.basename(wav_file))[0]
 
-        assert signal.shape[0] == 1, "Audio needs to be single channel"
-        assert fs == 16000, "Only 16khz audio supported"
+        if check_wav_16khz_mono(wav_file):
+            signal, fs = torchaudio.load(wav_file)
+        else:
+            print("Converting audio file to single channel WAV using ffmpeg...")
+            converted_wavfile = os.path.join(os.path.dirname(
+                wav_file), '{}_converted.wav'.format(recname))
+            convert_wavfile(wav_file, converted_wavfile)
+            assert os.path.isfile(
+                converted_wavfile), "Couldn't find converted wav file, failed for some reason"
+            signal, fs = torchaudio.load(converted_wavfile)
 
         print('Running VAD...')
         speech_ts = self.vad(signal[0])
@@ -227,7 +237,7 @@ class Diarizer:
         embeds, segments = self.recording_embeds(signal, fs, speech_ts)
 
         print('Clustering to {} speakers...'.format(num_speakers))
-        cluster_labels = self.cluster(embeds, n_clusters=num_speakers, 
+        cluster_labels = self.cluster(embeds, n_clusters=num_speakers,
                                       threshold=threshold, enhance_sim=enhance_sim)
 
         print('Cleaning up output...')
@@ -378,6 +388,7 @@ class Diarizer:
                                                             seg['label']))
                 fp.write('{}\n\n'.format(seg['words']))
 
+
 if __name__ == "__main__":
     wavfile = sys.argv[1]
     num_speakers = int(sys.argv[2])
@@ -396,11 +407,11 @@ if __name__ == "__main__":
         convert_wavfile(wavfile, correct_wav)
 
     diar = Diarizer(
-                embed_model='xvec', # supported types: ['xvec', 'ecapa']
-                cluster_method='ahc', # supported types: ['ahc', 'sc']
-                window=1.5, # size of window to extract embeddings (in seconds)
-                period=0.75 # hop of window (in seconds)
-                )
-    segments = diar.diarize(correct_wav, 
+        embed_model='xvec',  # supported types: ['xvec', 'ecapa']
+        cluster_method='ahc',  # supported types: ['ahc', 'sc']
+        window=1.5,  # size of window to extract embeddings (in seconds)
+        period=0.75  # hop of window (in seconds)
+    )
+    segments = diar.diarize(correct_wav,
                             num_speakers=num_speakers,
                             outfile=os.path.join(outfolder, 'hyp.rttm'))

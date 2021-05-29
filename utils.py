@@ -13,7 +13,7 @@ from IPython.display import Audio, display
 ##################
 def check_wav_16khz_mono(wavfile):
     """
-    Checks if a wav file is 16khz and single channel
+    Returns True if a wav file is 16khz and single channel
     """
     signal, fs = torchaudio.load(wavfile)
 
@@ -34,6 +34,18 @@ def convert_wavfile(wavfile, outfile):
     subprocess.Popen(cmd, shell=True).wait()
 
 
+def check_ffmpeg():
+    """
+    Returns True if ffmpeg is installed
+    """
+    try:
+        subprocess.check_output("ffmpeg",
+                                stderr=subprocess.STDOUT)
+        return True
+    except OSError as e:
+        return False
+
+
 ##################
 # TTML utils
 ##################
@@ -43,11 +55,13 @@ def parse_timestamp(timestr):
     delta = date_time - starttime
     return delta.total_seconds()
 
+
 def parse_entry(entry):
     start = parse_timestamp(entry['begin'])
     end = parse_timestamp(entry['end'])
     text = entry.text
     return {'start': start, 'end': end, 'text': text}
+
 
 def parse_ttml(file):
     with open(file) as fp:
@@ -64,13 +78,13 @@ def parse_ttml(file):
 ##################
 # Plotting utils
 ##################
-colors = np.array(['tab:blue', 'tab:orange', 'tab:green', 
-                    'tab:red', 'tab:purple', 'tab:brown', 
-                    'tab:pink', 'tab:gray', 'tab:olive', 
-                    'tab:cyan'])
+colors = np.array(['tab:blue', 'tab:orange', 'tab:green',
+                   'tab:red', 'tab:purple', 'tab:brown',
+                   'tab:pink', 'tab:gray', 'tab:olive',
+                   'tab:cyan'])
 
 
-def waveplot(signal, fs, start_idx=0, figsize=(5,3), color='tab:blue'):
+def waveplot(signal, fs, start_idx=0, figsize=(5, 3), color='tab:blue'):
     """
     A waveform plot for a signal
 
@@ -88,20 +102,22 @@ def waveplot(signal, fs, start_idx=0, figsize=(5,3), color='tab:blue'):
     start_time = start_idx / fs
     end_time = start_time + (len(signal) / fs)
 
-    plt.plot(np.linspace(start_time, end_time, len(signal)), signal, color=color)
+    plt.plot(np.linspace(start_time, end_time,
+             len(signal)), signal, color=color)
     plt.xlabel('Time (s)')
     plt.xlim([start_time, end_time])
 
-    max_amp = np.max(np.abs([np.max(signal),np.min(signal)]))
+    max_amp = np.max(np.abs([np.max(signal), np.min(signal)]))
     plt.ylim([-max_amp, max_amp])
 
     plt.tight_layout()
     return plt.gcf()
 
-def combined_waveplot(signal, fs, segments, figsize=(10,3), tick_interval=60):
+
+def combined_waveplot(signal, fs, segments, figsize=(10, 3), tick_interval=60):
     """
     The full diarized waveform plot, with each speech segment coloured according to speaker
-    
+
         Inputs:
             - Signal (array): The waveform (1D)
             - fs (int): The frequency in Hz 
@@ -121,20 +137,21 @@ def combined_waveplot(signal, fs, segments, figsize=(10,3), tick_interval=60):
         color = colors[seg['label']]
 
         linelabel = 'Speaker {}'.format(seg['label'])
-        plt.plot(np.linspace(seg['start'], seg['end'], len(speech)), speech, color=color, label=linelabel)
+        plt.plot(np.linspace(seg['start'], seg['end'], len(
+            speech)), speech, color=color, label=linelabel)
 
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys(), loc='lower right')
 
     plt.xlabel('Time')
-    plt.xlim([0,len(signal)/fs])
+    plt.xlim([0, len(signal)/fs])
 
     xticks = np.arange(0, (len(signal)//fs)+1, tick_interval)
     xtick_labels = [str(datetime.timedelta(seconds=int(x))) for x in xticks]
     plt.xticks(ticks=xticks, labels=xtick_labels)
 
-    max_amp = np.max(np.abs([np.max(signal),np.min(signal)]))
+    max_amp = np.max(np.abs([np.max(signal), np.min(signal)]))
     plt.ylim([-max_amp, max_amp])
 
     plt.tight_layout()
@@ -155,6 +172,7 @@ def waveplot_perspeaker(signal, fs, segments):
         color = colors[seg['label']]
         waveplot(speech, fs, start_idx=start, color=color)
         plt.show()
-        print('Speaker {} ({}s - {}s)'.format(seg['label'], seg['start'], seg['end']))
+        print(
+            'Speaker {} ({}s - {}s)'.format(seg['label'], seg['start'], seg['end']))
         display(Audio(speech, rate=fs))
         print('='*40 + '\n')
