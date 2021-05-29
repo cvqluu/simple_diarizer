@@ -15,13 +15,16 @@ def check_wav_16khz_mono(wavfile):
     """
     Returns True if a wav file is 16khz and single channel
     """
-    signal, fs = torchaudio.load(wavfile)
+    try:
+        signal, fs = torchaudio.load(wavfile)
 
-    mono = signal.shape[0] == 1
-    freq = fs == 16000
-    if mono and freq:
-        return True
-    else:
+        mono = signal.shape[0] == 1
+        freq = fs == 16000
+        if mono and freq:
+            return True
+        else:
+            return False
+    except:
         return False
 
 
