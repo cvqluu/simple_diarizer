@@ -6,6 +6,7 @@ import numpy as np
 import torchaudio
 from bs4 import BeautifulSoup
 
+from IPython.display import Audio, display
 
 ##################
 # Audio utils
@@ -36,7 +37,6 @@ def convert_wavfile(wavfile, outfile):
 ##################
 # TTML utils
 ##################
-
 def parse_timestamp(timestr):
     starttime = datetime.datetime.strptime("00:00:00.000", "%H:%M:%S.%f")
     date_time = datetime.datetime.strptime(timestr, "%H:%M:%S.%f")
@@ -60,11 +60,30 @@ def parse_ttml(file):
         segments.append(seg)
     return segments
 
+
 ##################
 # Plotting utils
 ##################
+colors = np.array(['tab:blue', 'tab:orange', 'tab:green', 
+                    'tab:red', 'tab:purple', 'tab:brown', 
+                    'tab:pink', 'tab:gray', 'tab:olive', 
+                    'tab:cyan'])
+
 
 def waveplot(signal, fs, start_idx=0, figsize=(5,3), color='tab:blue'):
+    """
+    A waveform plot for a signal
+
+    Inputs:
+        - Signal (array): The waveform (1D)
+        - fs (int): The frequency in Hz
+        - start_idx (int): The starting index of the signal, changes the x axis
+                    (note this does not slice the signal, this just changes the xticks)
+        - figsize (tuple): Figure size tuple passed to plt.figure()
+        - color: (str): The color of the waveform
+    Outputs:
+        - Returns the matplotlib figure
+    """
     plt.figure(figsize=figsize)
     start_time = start_idx / fs
     end_time = start_time + (len(signal) / fs)
@@ -77,13 +96,23 @@ def waveplot(signal, fs, start_idx=0, figsize=(5,3), color='tab:blue'):
     plt.ylim([-max_amp, max_amp])
 
     plt.tight_layout()
-    return plt.gca()
+    return plt.gcf()
 
 def combined_waveplot(signal, fs, segments, figsize=(10,3), tick_interval=60):
-    colors = np.array(['tab:blue', 'tab:orange', 'tab:green', 
-                        'tab:red', 'tab:purple', 'tab:brown', 
-                        'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'])
+    """
+    The full diarized waveform plot, with each speech segment coloured according to speaker
+    
+        Inputs:
+            - Signal (array): The waveform (1D)
+            - fs (int): The frequency in Hz 
+                        (should be 16000 for the models in this repo)
+            - segments (list):  The diarization outputs (segment information)
+            - figsize (tuple): Figsize passed into plt.figure()
+            - tick_interval (float): Where to place ticks for xlabel 
 
+        Outputs:
+            - The matplotlib figure
+    """
     plt.figure(figsize=figsize)
     for seg in segments:
         start = seg['start_sample']
@@ -109,4 +138,23 @@ def combined_waveplot(signal, fs, segments, figsize=(10,3), tick_interval=60):
     plt.ylim([-max_amp, max_amp])
 
     plt.tight_layout()
-    return plt.gca()
+    return plt.gcf()
+
+
+def waveplot_perspeaker(signal, fs, segments):
+    """
+    Makes a waveplot for each speech segment (single speaker per plot).
+    Also previews the audio of that clip
+
+    Designed to be run in a jupyter notebook
+    """
+    for seg in segments:
+        start = seg['start_sample']
+        end = seg['end_sample']
+        speech = signal[start:end]
+        color = colors[seg['label']]
+        waveplot(speech, fs, start_idx=start, color=color)
+        plt.show()
+        print('Speaker {} ({}s - {}s)'.format(seg['label'], seg['start'], seg['end']))
+        display(Audio(speech, rate=fs))
+        print('='*40 + '\n')
