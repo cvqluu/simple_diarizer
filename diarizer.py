@@ -12,8 +12,8 @@ from tqdm.autonotebook import tqdm
 
 from .cluster import cluster_AHC, cluster_SC
 from .utils import (check_wav_16khz_mono, convert_wavfile,
-                    download_youtube_ttml, download_youtube_wav,
-                    get_youtube_id, parse_ttml)
+                    download_youtube_files, download_youtube_ttml,
+                    download_youtube_wav, get_youtube_id, parse_ttml)
 
 
 class Diarizer:
@@ -270,21 +270,12 @@ class Diarizer:
         Diarize a YouTube URL
         """
         youtube_id = get_youtube_id(youtube_url)
+        converted_wavfile, text_segments = download_youtube_files(youtube_url,
+                                                                  overwrite=overwrite,
+                                                                  lang=lang,
+                                                                  outfolder=outfolder)
 
-        # Download files
-        wav_file = download_youtube_wav(
-            youtube_id, outfolder=outfolder, overwrite=overwrite)
-
-        converted_wavfile = convert_wavfile(wav_file, os.path.join(
-            outfolder, '{}_converted.wav'.format(youtube_id)))
-
-        print('Downloaded audio and converted to: {}'.format(converted_wavfile))
-
-        ttml_file = download_youtube_ttml(
-            youtube_id, outfolder=outfolder, lang=lang, overwrite=overwrite)
-
-        text_segments = parse_ttml(ttml_file)
-        segments = self.diarize(converted_wavfile, 
+        segments = self.diarize(converted_wavfile,
                                 num_speakers=num_speakers,
                                 threshold=threshold,
                                 silence_tolerance=silence_tolerance,
@@ -333,49 +324,45 @@ class Diarizer:
                 new_segments.append(seg)
         return new_segments
 
-    def match_diarization_to_transcript(self, segments, word_segments):
+    def match_diarization_to_transcript(self, segments, text_segments):
         """
         Match the output of .diarize to word segments
         """
 
-        word_starts, word_ends, word_segs = [], [], []
-        for s in word_segments:
-            word_starts.append(s['start'])
-            word_ends.append(s['end'])
-            word_segs.append(s['text'])
+        text_starts, text_ends, text_segs = [], [], []
+        for s in text_segments:
+            text_starts.append(s['start'])
+            text_ends.append(s['end'])
+            text_segs.append(s['text'])
 
-        word_starts = np.array(word_starts)
-        word_ends = np.array(word_ends)
-        word_segs = np.array(word_segs)
+        text_starts = np.array(text_starts)
+        text_ends = np.array(text_ends)
+        text_segs = np.array(text_segs)
 
         # Get the earliest start from either diar output or asr output
-        earliest_start = np.min([word_starts[0], segments[0]['start']])
+        earliest_start = np.min([text_starts[0], segments[0]['start']])
 
-        worded_segments = self.join_samespeaker_segments(segments.copy())
+        worded_segments = segments.copy()
         worded_segments[0]['start'] = earliest_start
         cutoffs = []
 
         for seg in worded_segments:
-            end_idx = np.searchsorted(word_ends, seg['end'], side='left') - 1
+            end_idx = np.searchsorted(text_ends, seg['end'], side='left') - 1
             cutoffs.append(end_idx)
 
         indexes = [[0, cutoffs[0]]]
         for c in cutoffs[1:]:
             indexes.append([indexes[-1][-1], c])
 
-        indexes[-1][-1] = len(word_segs)
+        indexes[-1][-1] = len(text_segs)
 
         final_segments = []
 
         for i, seg in enumerate(worded_segments):
             s_idx, e_idx = indexes[i]
-            words = word_segs[s_idx:e_idx]
+            words = text_segs[s_idx:e_idx]
             seg['words'] = ' '.join(words)
-            if len(words) >= 1:
-                final_segments.append(seg)
-            else:
-                print('Removed segment between {} and {} as no words were matched'.format(
-                    seg['start'], seg['end']))
+            final_segments.append(seg)
 
         return final_segments
 

@@ -107,6 +107,23 @@ def download_youtube_ttml(youtube_id, outfolder='./', lang='en', overwrite=True)
     assert os.path.isfile(expected_outfile), "Couldn't find expected outfile, something went wrong"
     return expected_outfile
 
+def download_youtube_files(url, overwrite=True, lang='en', outfolder='./'):
+    youtube_id = get_youtube_id(url)
+
+    # Download files
+    wav_file = download_youtube_wav(
+        youtube_id, outfolder=outfolder, overwrite=overwrite)
+
+    converted_wavfile = convert_wavfile(wav_file, os.path.join(
+        outfolder, '{}_converted.wav'.format(youtube_id)))
+
+    print('Downloaded audio and converted to: {}'.format(converted_wavfile))
+
+    ttml_file = download_youtube_ttml(
+        youtube_id, outfolder=outfolder, lang=lang, overwrite=overwrite)
+    
+    return converted_wavfile, parse_ttml(ttml_file)
+
 
 ##################
 # TTML utils
