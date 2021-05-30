@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+from copy import deepcopy
 
 import numpy as np
 import pandas as pd
@@ -284,7 +285,7 @@ class Diarizer:
                                 outfile=os.path.join(outfolder, '{}.rttm'.format(youtube_id)))
 
         worded_segments = self.match_diarization_to_transcript(
-            segments.copy(), text_segments)
+            segments, text_segments)
 
         self.nice_text_output(worded_segments, os.path.join(
             outfolder, '{}_transcript.txt'.format(youtube_id)))
@@ -324,7 +325,8 @@ class Diarizer:
                 new_segments.append(seg)
         return new_segments
 
-    def match_diarization_to_transcript(self, segments, text_segments):
+    @staticmethod
+    def match_diarization_to_transcript(segments, text_segments):
         """
         Match the output of .diarize to word segments
         """
@@ -361,10 +363,11 @@ class Diarizer:
         for i, seg in enumerate(worded_segments):
             s_idx, e_idx = indexes[i]
             words = text_segs[s_idx:e_idx]
-            seg['words'] = ' '.join(words)
-            final_segments.append(seg)
+            newseg = deepcopy(seg)
+            newseg['words'] = ' '.join(words)
+            final_segments.append(newseg)
 
-        return final_segments
+        return final_segments 
 
     def match_diarization_to_transcript_ctm(self, segments, ctm_file):
         """
