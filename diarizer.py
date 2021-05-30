@@ -10,8 +10,10 @@ from sklearn.cluster import AgglomerativeClustering
 from speechbrain.pretrained import EncoderClassifier
 from tqdm.autonotebook import tqdm
 
-from .utils import check_wav_16khz_mono, convert_wavfile
 from .cluster import cluster_AHC, cluster_SC
+from .utils import (check_wav_16khz_mono, convert_wavfile,
+                    download_youtube_ttml, download_youtube_wav,
+                    get_youtube_id, parse_ttml)
 
 
 class Diarizer:
@@ -253,6 +255,50 @@ class Diarizer:
             return cleaned_segments
         else:
             return cleaned_segments, embeds, segments
+
+    def diarize_youtube(self,
+                        youtube_url,
+                        num_speakers=2,
+                        threshold=None,
+                        lang='en',
+                        outfolder='./',
+                        overwrite=False,
+                        silence_tolerance=0.2,
+                        enhance_sim=True,
+                        outfile=None):
+        """
+        Diarize a YouTube URL
+        """
+        youtube_id = get_youtube_id(youtube_url)
+
+        # Download files
+        wav_file = download_youtube_wav(
+            youtube_id, outfolder=outfolder, overwrite=overwrite)
+
+        converted_wavfile = convert_wavfile(wav_file, os.path.join(
+            outfolder, '{}_converted.wav'.format(youtube_id)))
+
+        print('Downloaded audio and converted to: {}'.format(converted_wavfile))
+
+        ttml_file = download_youtube_ttml(
+            youtube_id, outfolder=outfolder, lang=lang, overwrite=overwrite)
+
+        text_segments = parse_ttml(ttml_file)
+        segments = self.diarize(converted_wavfile, 
+                                num_speakers=num_speakers,
+                                threshold=threshold,
+                                silence_tolerance=silence_tolerance,
+                                enhance_sim=enhance_sim,
+                                extra_info=False,
+                                outfile=os.path.join(outfolder, '{}.rttm'.format(youtube_id)))
+
+        worded_segments = self.match_diarization_to_transcript(
+            segments, text_segments)
+
+        self.nice_text_output(worded_segments, os.path.join(
+            outfolder, '{}_transcript.txt'.format(youtube_id)))
+
+        return segments, worded_segments, converted_wavfile
 
     @staticmethod
     def rttm_output(segments, recname, outfile=None):
