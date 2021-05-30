@@ -293,7 +293,7 @@ class Diarizer:
                                 outfile=os.path.join(outfolder, '{}.rttm'.format(youtube_id)))
 
         worded_segments = self.match_diarization_to_transcript(
-            segments, text_segments)
+            segments.copy(), text_segments)
 
         self.nice_text_output(worded_segments, os.path.join(
             outfolder, '{}_transcript.txt'.format(youtube_id)))
@@ -313,7 +313,7 @@ class Diarizer:
                 fp.write(line)
 
     @staticmethod
-    def join_samespeaker_segments(segments, silence_tolerance=5.0):
+    def join_samespeaker_segments(segments, silence_tolerance=0.5):
         """
         Join up segments that belong to the same speaker, 
         even if there is a duration of silence in between them.
@@ -351,7 +351,7 @@ class Diarizer:
         # Get the earliest start from either diar output or asr output
         earliest_start = np.min([word_starts[0], segments[0]['start']])
 
-        worded_segments = self.join_samespeaker_segments(segments)
+        worded_segments = self.join_samespeaker_segments(segments.copy())
         worded_segments[0]['start'] = earliest_start
         cutoffs = []
 
