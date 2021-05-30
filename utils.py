@@ -1,6 +1,7 @@
 import datetime
 import os
 import subprocess
+from pprint import pprint
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -233,7 +234,8 @@ def waveplot_perspeaker(signal, fs, segments):
         color = colors[seg['label']]
         waveplot(speech, fs, start_idx=start, color=color)
         plt.show()
-        print(
-            'Speaker {} ({}s - {}s)'.format(seg['label'], seg['start'], seg['end']))
+        print('Speaker {} ({}s - {}s)'.format(seg['label'], seg['start'], seg['end']))
+        if 'words' in seg:
+            pprint(seg['words'])
         display(Audio(speech, rate=fs))
         print('='*40 + '\n')
