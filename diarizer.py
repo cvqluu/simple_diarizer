@@ -57,9 +57,7 @@ class Diarizer:
                                       model='silero_vad')
         # force_reload=True)
 
-        (get_speech_ts,
-            _, _, read_audio,
-            _, _, _) = utils
+        get_speech_ts = utils[0]
         return model, get_speech_ts
 
     def vad(self, signal):
