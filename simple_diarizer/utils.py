@@ -73,7 +73,6 @@ def download_youtube_wav(youtube_id, outfolder='./', overwrite=True):
     os.makedirs(outfolder, exist_ok=True)
 
     outfile = os.path.join(outfolder, '{}.wav'.format(youtube_id))
-
     if not overwrite:
         if os.path.isfile(outfile):
             return outfile
