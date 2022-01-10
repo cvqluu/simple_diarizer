@@ -31,6 +31,14 @@ plt.show()
   <img src="media/diarized_waveplot.png?raw=true">
 </p>
 
+### Install
+
+Simplified diarization is available on PyPI:
+
+```
+pip install simple-diarizer
+```
+
 ### Source Video
 
 "[Some Quick Advice from Barack Obama!](https://youtu.be/I49VNQ6lmKk)"
