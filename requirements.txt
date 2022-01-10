@@ -7,3 +7,4 @@ scikit-learn==1.0.2
 speechbrain==0.5.11
 torchaudio==0.10.1
 validators==0.18.2
+youtube-dl==2021.12.17
