@@ -6,11 +6,12 @@ from scipy.ndimage import gaussian_filter
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.metrics import pairwise_distances
 
-def similarity_matrix(embeds, metric='cosine'):
+
+def similarity_matrix(embeds, metric="cosine"):
     return pairwise_distances(embeds, metric=metric)
 
-def cluster_AHC(embeds, n_clusters=None, threshold=None, 
-                metric='cosine', **kwargs):
+
+def cluster_AHC(embeds, n_clusters=None, threshold=None, metric="cosine", **kwargs):
     """
     Cluster embeds using Agglomerative Hierarchical Clustering
     """
@@ -18,31 +19,33 @@ def cluster_AHC(embeds, n_clusters=None, threshold=None,
         assert threshold, "If num_clusters is not defined, threshold must be defined"
 
     S = similarity_matrix(embeds, metric=metric)
-    
+
     if n_clusters is None:
-        cluster_model = AgglomerativeClustering(n_clusters=None, 
-                                                affinity='precomputed',
-                                                linkage='average', 
-                                                compute_full_tree=True,
-                                                distance_threshold=threshold) 
+        cluster_model = AgglomerativeClustering(
+            n_clusters=None,
+            affinity="precomputed",
+            linkage="average",
+            compute_full_tree=True,
+            distance_threshold=threshold,
+        )
 
         return cluster_model.fit_predict(S)
     else:
-        cluster_model = AgglomerativeClustering(n_clusters=n_clusters,
-                                                affinity='precomputed',
-                                                linkage='average')
+        cluster_model = AgglomerativeClustering(
+            n_clusters=n_clusters, affinity="precomputed", linkage="average"
+        )
 
         return cluster_model.fit_predict(S)
 
 
 ##########################################
 # Spectral clustering
-# A lot of these methods are lifted from 
+# A lot of these methods are lifted from
 # https://github.com/wq2012/SpectralCluster
 ##########################################
 
-def cluster_SC(embeds, n_clusters=None, threshold=None, 
-                enhance_sim=True, **kwargs):
+
+def cluster_SC(embeds, n_clusters=None, threshold=None, enhance_sim=True, **kwargs):
     """
     Cluster embeds using Spectral Clustering
     """
@@ -52,7 +55,7 @@ def cluster_SC(embeds, n_clusters=None, threshold=None,
     S = compute_affinity_matrix(embeds)
     if enhance_sim:
         S = sim_enhancement(S)
-    
+
     if n_clusters is None:
         (eigenvalues, eigenvectors) = compute_sorted_eigenvectors(S)
         # Get number of clusters.
@@ -67,17 +70,17 @@ def cluster_SC(embeds, n_clusters=None, threshold=None,
         # This implemention from scikit-learn does NOT, which is inconsistent
         # with the paper.
         kmeans_clusterer = KMeans(
-            n_clusters=k,
-            init="k-means++",
-            max_iter=300,
-            random_state=0)
+            n_clusters=k, init="k-means++", max_iter=300, random_state=0
+        )
         labels = kmeans_clusterer.fit_predict(spectral_embeddings)
         return labels
     else:
-        cluster_model = SpectralClustering(n_clusters=n_clusters,
-                                           affinity='precomputed')
+        cluster_model = SpectralClustering(
+            n_clusters=n_clusters, affinity="precomputed"
+        )
 
         return cluster_model.fit_predict(S)
+
 
 def diagonal_fill(A):
     """
@@ -87,21 +90,24 @@ def diagonal_fill(A):
     A[np.diag_indices(A.shape[0])] = np.max(A, axis=1)
     return A
 
+
 def gaussian_blur(A, sigma=1.0):
     """
     Does a gaussian blur on the affinity matrix
     """
     return gaussian_filter(A, sigma=sigma)
 
+
 def row_threshold_mult(A, p=0.95, mult=0.01):
     """
     For each row multiply elements smaller than the row's p'th percentile by mult
     """
-    percentiles = np.percentile(A, p*100, axis=1)
-    mask = A < percentiles[:,np.newaxis]
+    percentiles = np.percentile(A, p * 100, axis=1)
+    mask = A < percentiles[:, np.newaxis]
 
-    A = (mask * mult * A) +  (~mask * A)
+    A = (mask * mult * A) + (~mask * A)
     return A
+
 
 def symmetrization(A):
     """
@@ -109,31 +115,35 @@ def symmetrization(A):
     """
     return np.maximum(A, A.T)
 
+
 def diffusion(A):
     """
     Diffusion: Y <- YY^T
     """
     return np.dot(A, A.T)
 
+
 def row_max_norm(A):
     """
     Row-wise max normalization: S_{ij} = Y_{ij} / max_k(Y_{ik})
     """
     maxes = np.amax(A, axis=1)
-    return A/maxes
+    return A / maxes
+
 
 def sim_enhancement(A):
     func_order = [
-                  diagonal_fill,
-                  gaussian_blur,
-                  row_threshold_mult,
-                  symmetrization,
-                  diffusion,
-                  row_max_norm
-                ]
+        diagonal_fill,
+        gaussian_blur,
+        row_threshold_mult,
+        symmetrization,
+        diffusion,
+        row_max_norm,
+    ]
     for f in func_order:
         A = f(A)
     return A
+
 
 def compute_affinity_matrix(X):
     """Compute the affinity matrix from data.
@@ -175,8 +185,7 @@ def compute_sorted_eigenvectors(A):
     return w, v
 
 
-def compute_number_of_clusters(
-        eigenvalues, max_clusters=None, stop_eigenvalue=1e-2):
+def compute_number_of_clusters(eigenvalues, max_clusters=None, stop_eigenvalue=1e-2):
     """Compute number of clusters using EigenGap principle.
     Args:
         eigenvalues: sorted eigenvalues of the affinity matrix
@@ -198,6 +207,3 @@ def compute_number_of_clusters(
             max_delta = delta
             max_delta_index = i
     return max_delta_index
-
-
-

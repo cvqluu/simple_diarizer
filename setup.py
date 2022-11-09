@@ -12,5 +12,5 @@ setuptools.setup(
     version=__version__,
     install_requires=install_requires,
     long_description=long_description,
-    long_description_content_type="text/markdown"
+    long_description_content_type="text/markdown",
 )
