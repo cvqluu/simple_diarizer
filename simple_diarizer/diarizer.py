@@ -262,7 +262,7 @@ class Diarizer:
         if not extra_info:
             return cleaned_segments
         else:
-            return cleaned_segments, embeds, segments
+            return cleaned_segments, embeds, segments, cluster_labels
 
     @staticmethod
     def rttm_output(segments, recname, outfile=None):
