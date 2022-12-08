@@ -275,7 +275,7 @@ class Diarizer:
         if not extra_info:
             return cleaned_segments
         else:
-           return {"clean_segments": cleaned_segments,
+            return {"clean_segments": cleaned_segments,
                     "embeds": embeds,
                     "segments": segments,
                     "cluster_labels": cluster_labels} 
