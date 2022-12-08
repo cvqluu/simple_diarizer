@@ -215,6 +215,19 @@ class Diarizer:
                                 'end_sample' Ending index of segment,
                                 'label': Cluster label of segment
                               }
+                If extra_info is True:
+                    dict: { 'segments': segments (list): List of dicts with segment information
+                                                {
+                                                    'start': Start time of segment in seconds,
+                                                    'start_sample': Starting index of segment,
+                                                    'end': End time of segment in seconds,
+                                                    'end_sample' Ending index of segment,
+                                                    'label': Cluster label of segment
+                                                },
+                            'embeds': embeddings (np.array): Array of embeddings, each row corresponds to a segment,
+                            'segments': segments (list): indexes for start and end frame for each embed in embeds,
+                            'cluster_labels': cluster_labels (list): cluster label for each embed in embeds
+                            }
 
         Uses AHC/SC to cluster
         """
@@ -262,7 +275,10 @@ class Diarizer:
         if not extra_info:
             return cleaned_segments
         else:
-            return cleaned_segments, embeds, segments
+            return {"clean_segments": cleaned_segments,
+                    "embeds": embeds,
+                    "segments": segments,
+                    "cluster_labels": cluster_labels} 
 
     @staticmethod
     def rttm_output(segments, recname, outfile=None):
