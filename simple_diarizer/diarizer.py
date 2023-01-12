@@ -187,6 +187,7 @@ class Diarizer:
         enhance_sim=True,
         extra_info=False,
         outfile=None,
+        **kwargs_clustering
     ):
         """
         Diarize a 16khz mono wav file, produces list of segments
@@ -260,6 +261,7 @@ class Diarizer:
             n_clusters=num_speakers,
             threshold=threshold,
             enhance_sim=enhance_sim,
+            **kwargs_clustering
         )
 
         print("Cleaning up output...")
@@ -278,7 +280,7 @@ class Diarizer:
             return {"clean_segments": cleaned_segments,
                     "embeds": embeds,
                     "segments": segments,
-                    "cluster_labels": cluster_labels} 
+                    "cluster_labels": cluster_labels}
 
     @staticmethod
     def rttm_output(segments, recname, outfile=None):
@@ -422,6 +424,7 @@ if __name__ == "__main__":
     wavfile = sys.argv[1]
     num_speakers = int(sys.argv[2])
     outfolder = sys.argv[3]
+    kwargs_clustering = dict(arg.split('=') for arg in sys.argv[4:]) # e.g. eigen_solver=lobpcg
 
     assert os.path.isfile(wavfile), "Couldn't find {}".format(wavfile)
 
@@ -444,4 +447,5 @@ if __name__ == "__main__":
         correct_wav,
         num_speakers=num_speakers,
         outfile=os.path.join(outfolder, "hyp.rttm"),
+        **kwargs_clustering
     )

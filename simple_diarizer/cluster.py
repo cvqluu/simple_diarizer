@@ -20,22 +20,24 @@ def cluster_AHC(embeds, n_clusters=None, threshold=None, metric="cosine", **kwar
 
     S = similarity_matrix(embeds, metric=metric)
 
+    # kwargs for AgglomerativeClustering with defaults set by simple_diarizer
+    kwargs_ac = {
+        "n_clusters": n_clusters,
+        "affinity": kwargs.get("affinity", "precomputed"),
+        "linkage": kwargs.get("linkage", "average"),
+        "distance_threshold": threshold
+    }
+
     if n_clusters is None:
-        cluster_model = AgglomerativeClustering(
-            n_clusters=None,
-            affinity="precomputed",
-            linkage="average",
-            compute_full_tree=True,
-            distance_threshold=threshold,
-        )
+        kwargs_ac["compute_full_tree"]: kwargs.get("compute_full_tree", True)
 
-        return cluster_model.fit_predict(S)
-    else:
-        cluster_model = AgglomerativeClustering(
-            n_clusters=n_clusters, affinity="precomputed", linkage="average"
-        )
+    # kwargs for AgglomerativeClustering which do not have defaults set by simple_diarizer
+    for kwarg_item in ["memory", "connectivity", "compute_distances", "compute_full_tree"]:
+        if kwarg_item in kwargs:
+            kwargs_ac[kwarg_item] = kwargs[kwarg_item]
+    cluster_model = AgglomerativeClustering(**kwargs_ac)
 
-        return cluster_model.fit_predict(S)
+    return cluster_model.fit_predict(S)
 
 
 ##########################################
@@ -59,7 +61,7 @@ def cluster_SC(embeds, n_clusters=None, threshold=None, enhance_sim=True, **kwar
     if n_clusters is None:
         (eigenvalues, eigenvectors) = compute_sorted_eigenvectors(S)
         # Get number of clusters.
-        k = compute_number_of_clusters(eigenvalues, 100, threshold)
+        k = compute_number_of_clusters(eigenvalues, kwargs.get("max_clusters", 100), threshold)
 
         # Get spectral embeddings.
         spectral_embeddings = eigenvectors[:, :k]
@@ -69,15 +71,36 @@ def cluster_SC(embeds, n_clusters=None, threshold=None, enhance_sim=True, **kwar
         # that supports customized distance measure such as cosine distance.
         # This implemention from scikit-learn does NOT, which is inconsistent
         # with the paper.
-        kmeans_clusterer = KMeans(
-            n_clusters=k, init="k-means++", max_iter=300, random_state=0
-        )
+
+        # kwargs for KMeans with defaults set by simple_diarizer
+        kwargs_kmeans = {
+            "n_clusters": k,
+            "init": kwargs.get("init", "k-means++"),
+            "max_iter": kwargs.get("max_iter", 300),
+            "random_state": kwargs.get("random_state", 0)
+        }
+        # kwargs for KMeans which do not have defaults set by simple_diarizer
+        for kwarg_item in ["tol", "verbose", "copy_x", "algorithm"]:
+            if kwarg_item in kwargs:
+                kwargs_kmeans[kwarg_item] = kwargs[kwarg_item]
+
+        kmeans_clusterer = KMeans(**kwargs_kmeans)
         labels = kmeans_clusterer.fit_predict(spectral_embeddings)
         return labels
+
     else:
-        cluster_model = SpectralClustering(
-            n_clusters=n_clusters, affinity="precomputed"
-        )
+        # kwargs for SpectralClustering with defaults set by simple_diarizer
+        kwargs_sc = {
+            "n_clusters": n_clusters,
+            "affinity": kwargs.get("affinity", "precomputed")
+        }
+        # kwargs for SpectralClustering which do not have defaults set by simple_diarizer
+        for kwarg_item in ["eigen_solver", "n_components", "random_state", "n_init", "gamma", "n_neighbors",
+                           "eigen_tol", "assign_labels", "degree", "coef0", "kernel_params", "n_jobs", "verbose"]:
+            if kwarg_item in kwargs:
+                kwargs_sc[kwarg_item] = kwargs[kwarg_item]
+
+        cluster_model = SpectralClustering(**kwargs_sc)
 
         return cluster_model.fit_predict(S)
 
