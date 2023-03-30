@@ -5,7 +5,7 @@ from scipy.sparse.csgraph import laplacian
 from scipy.ndimage import gaussian_filter
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.metrics import pairwise_distances
-
+from .Spectral_clustering import NME_SpectralClustering
 
 def similarity_matrix(embeds, metric="cosine"):
     return pairwise_distances(embeds, metric=metric)
@@ -43,9 +43,7 @@ def cluster_AHC(embeds, n_clusters=None, threshold=None, metric="cosine", **kwar
 # A lot of these methods are lifted from
 # https://github.com/wq2012/SpectralCluster
 ##########################################
-
-
-def cluster_SC(embeds, n_clusters=None, threshold=None, enhance_sim=True, **kwargs):
+def cluster_SC(embeds, n_clusters=None, max_speakers= None, threshold=None, enhance_sim=True, **kwargs):
     """
     Cluster embeds using Spectral Clustering
     """
@@ -59,7 +57,7 @@ def cluster_SC(embeds, n_clusters=None, threshold=None, enhance_sim=True, **kwar
     if n_clusters is None:
         (eigenvalues, eigenvectors) = compute_sorted_eigenvectors(S)
         # Get number of clusters.
-        k = compute_number_of_clusters(eigenvalues, 100, threshold)
+        k = compute_number_of_clusters(eigenvalues, max_speakers, threshold)
 
         # Get spectral embeddings.
         spectral_embeddings = eigenvectors[:, :k]
@@ -80,6 +78,34 @@ def cluster_SC(embeds, n_clusters=None, threshold=None, enhance_sim=True, **kwar
         )
 
         return cluster_model.fit_predict(S)
+
+
+def cluster_NME_SC(embeds, n_clusters=None, max_speakers= None, threshold=None, enhance_sim=True, **kwargs):
+    """
+    Cluster embeds using NME-Spectral Clustering
+    
+    if n_clusters is None:
+        assert threshold, "If num_clusters is not defined, threshold must be defined"
+    """
+    
+    S = cos_similarity(embeds)
+    if n_clusters is None:
+        labels = NME_SpectralClustering(
+                S,
+                num_clusters=n_clusters,
+                max_num_clusters=max_speakers
+                
+            )
+    else:
+        labels = NME_SpectralClustering(
+                S,
+                num_clusters=n_clusters,
+                
+                
+            )
+        
+   
+    return labels
 
 
 def diagonal_fill(A):
@@ -134,7 +160,7 @@ def row_max_norm(A):
 def sim_enhancement(A):
     func_order = [
         diagonal_fill,
-        gaussian_blur,
+        
         row_threshold_mult,
         symmetrization,
         diffusion,
@@ -143,6 +169,31 @@ def sim_enhancement(A):
     for f in func_order:
         A = f(A)
     return A
+
+def cos_similarity(x):
+    """Compute cosine similarity matrix in CPU & memory sensitive way
+
+    Args:
+        x (np.ndarray): embeddings, 2D array, embeddings are in rows
+
+    Returns:
+        np.ndarray: cosine similarity matrix
+
+    """
+    assert x.ndim == 2, f"x has {x.ndim} dimensions, it must be matrix"
+    x = x / (np.sqrt(np.sum(np.square(x), axis=1, keepdims=True)) + 1.0e-32)
+    assert np.allclose(np.ones_like(x[:, 0]), np.sum(np.square(x), axis=1))
+    max_n_elm = 200000000
+    step = max(max_n_elm // (x.shape[0] * x.shape[0]), 1)
+    retval = np.zeros(shape=(x.shape[0], x.shape[0]), dtype=np.float64)
+    x0 = np.expand_dims(x, 0)
+    x1 = np.expand_dims(x, 1)
+    for i in range(0, x.shape[1], step):
+        product = x0[:, :, i : i + step] * x1[:, :, i : i + step]
+        retval += np.sum(product, axis=2, keepdims=False)
+    assert np.all(retval >= -1.0001), retval
+    assert np.all(retval <= 1.0001), retval
+    return retval
 
 
 def compute_affinity_matrix(X):
